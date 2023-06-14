@@ -1,81 +1,65 @@
-import { useSelector } from 'react-redux';
-import React, { useState, useEffect } from 'react';
-import { ContactForm } from './ContactForm/ContactForm';
-import { Filter } from './Filter/Filter';
-import { ContactList } from './ContactList/ContactList';
-import { getContacts, getFilter } from 'redux/selectors';
-import { useDispatch } from 'react-redux';
-import { addContact, delContact } from 'redux/actions';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { nanoid } from 'nanoid';
+import ContactForm from './ContactForm/ContactForm';
+import ContactList from './ContactList/ContactList';
+import Filter from './Filter/Filter';
+import styles from './app.module.css';
+import {
+  addContact,
+  deleteContact,
+  setFilter,
+  initializeContacts,
+} from '../redux/contactSlice';
 
 export const App = () => {
-  const contacts = useSelector(getContacts);
-  const filter = useSelector(getFilter);
-
+  const filter = useSelector(state => state.contacts.filter);
+  const items = useSelector(state => state.contacts.items);
   const dispatch = useDispatch();
 
-  const [firstRenderFlag, setFlag] = useState(true);
-
-  useEffect(() => {}, []);
-
   useEffect(() => {
-    if (firstRenderFlag) {
-      const contactsFromLocalStorage = localStorage.getItem('contactList');
+    dispatch(initializeContacts());
+  }, [dispatch]);
 
-      if (contactsFromLocalStorage !== 'undefined') {
-        const parsedContacts = JSON.parse(contactsFromLocalStorage);
+  const handleAddContact = (name, number) => {
+    const id = nanoid();
+    dispatch(addContact({ id, name, number }));
 
-        if (parsedContacts) {
-        }
-      }
-      setFlag(false);
-    } else {
-      localStorage.setItem('contactList', JSON.stringify(contacts));
-    }
-  }, [contacts, firstRenderFlag]);
-
-  const handleSubmit = e => {
-    const name = e.name;
-    const number = e.number;
-    const contactsLists = [...contacts];
-
-    if (contactsLists.findIndex(contact => name === contact.name) !== -1) {
-      alert(`${name} is already in contacts.`);
-    } else {
-      dispatch(addContact(name, number));
-    }
+    const updatedContacts = [...items, { id, name, number }];
+    localStorage.setItem('contacts', JSON.stringify(updatedContacts));
   };
 
-  const handleDelete = e => {
-    dispatch(delContact(e));
+  const handleDeleteContact = contactId => {
+    dispatch(deleteContact(contactId));
+
+    const updatedContacts = items.filter(contact => contact.id !== contactId);
+    localStorage.setItem('contacts', JSON.stringify(updatedContacts));
   };
 
-  const getFilteredContacts = () => {
-    const filterContactsList = contacts.filter(contact => {
-      return contact.name.toLowerCase().includes(filter.toLowerCase());
-    });
-    return filterContactsList;
+  const handleFilterChange = e => {
+    const { value } = e.target;
+    dispatch(setFilter(value.toLowerCase().trim()));
   };
+
+  const filteredContacts = items.filter(contact =>
+    contact.name.toLowerCase().includes(filter.toLowerCase())
+  );
 
   return (
-    <div
-      style={{
-        height: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        fontSize: 20,
-        color: '#010101',
-      }}
-    >
-      <h1>Phonebook</h1>
-      <ContactForm handleSubmit={handleSubmit} />
-      <h2> Contacts</h2>
-      <Filter />
-      <ContactList
-        contacts={getFilteredContacts()}
-        handleDelete={handleDelete}
-      />
+    <div className={styles.container}>
+      <div className={styles.phonebook}>
+        <h1>Phonebook</h1>
+        <ContactForm onSubmit={handleAddContact} />
+      </div>
+
+      <div className={styles.contacts}>
+        <h2>Contacts</h2>
+        <Filter value={filter} onChange={handleFilterChange} />
+        <ContactList
+          contacts={filteredContacts}
+          onDeleteContact={handleDeleteContact}
+        />
+      </div>
     </div>
   );
 };
