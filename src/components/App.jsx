@@ -1,65 +1,52 @@
-import React, { useEffect } from 'react';
+import { ContactForm } from 'components/ContactForm/ContactForm';
+import { ContactList } from 'components/ContactList/ContactList';
+import { Filter } from 'components/Filter/Filter';
+import css from './App.module.css';
 import { useDispatch, useSelector } from 'react-redux';
-import { nanoid } from 'nanoid';
-import ContactForm from './ContactForm/ContactForm';
-import ContactList from './ContactList/ContactList';
-import Filter from './Filter/Filter';
-import styles from './app.module.css';
-import {
-  addContact,
-  deleteContact,
-  setFilter,
-  initializeContacts,
-} from '../redux/contactSlice';
+import { addContact, removeContact } from 'redux/contactsSlice';
+import { getContacts, getFilter, getFilteredContacts } from 'redux/selectors';
+import { setFilter } from 'redux/filtersSlice';
 
 export const App = () => {
-  const filter = useSelector(state => state.contacts.filter);
-  const items = useSelector(state => state.contacts.items);
   const dispatch = useDispatch();
+  const contacts = useSelector(getContacts);
+  const filter = useSelector(getFilter);
+  const filteredContacts = useSelector(getFilteredContacts);
 
-  useEffect(() => {
-    dispatch(initializeContacts());
-  }, [dispatch]);
+  const formSubmitHandler = (name, number) => {
+    if (
+      contacts.find(
+        contact => contact.name.toLowerCase() === name.toLowerCase()
+      )
+    ) {
+      alert(`${name} is already in list`);
+      return;
+    }
 
-  const handleAddContact = (name, number) => {
-    const id = nanoid();
-    dispatch(addContact({ id, name, number }));
-
-    const updatedContacts = [...items, { id, name, number }];
-    localStorage.setItem('contacts', JSON.stringify(updatedContacts));
+    const action = addContact({ name, number });
+    dispatch(action);
   };
 
-  const handleDeleteContact = contactId => {
-    dispatch(deleteContact(contactId));
-
-    const updatedContacts = items.filter(contact => contact.id !== contactId);
-    localStorage.setItem('contacts', JSON.stringify(updatedContacts));
+  const handleFilterChange = event => {
+    const action = setFilter(event.target.value.toLowerCase().trim());
+    dispatch(action);
   };
 
-  const handleFilterChange = e => {
-    const { value } = e.target;
-    dispatch(setFilter(value.toLowerCase().trim()));
+  const deleteContact = id => {
+    const action = removeContact(id);
+    dispatch(action);
   };
-
-  const filteredContacts = items.filter(contact =>
-    contact.name.toLowerCase().includes(filter.toLowerCase())
-  );
 
   return (
-    <div className={styles.container}>
-      <div className={styles.phonebook}>
-        <h1>Phonebook</h1>
-        <ContactForm onSubmit={handleAddContact} />
-      </div>
-
-      <div className={styles.contacts}>
-        <h2>Contacts</h2>
-        <Filter value={filter} onChange={handleFilterChange} />
-        <ContactList
-          contacts={filteredContacts}
-          onDeleteContact={handleDeleteContact}
-        />
-      </div>
+    <div className={css.phonebook}>
+      <h1 className={css.title}>Phonebook</h1>
+      <ContactForm formSubmitHandler={formSubmitHandler}></ContactForm>
+      <h2 className={css.title}>Contacts</h2>
+      <Filter value={filter} onChange={handleFilterChange}></Filter>
+      <ContactList
+        contacts={filteredContacts}
+        deleteContact={deleteContact}
+      ></ContactList>
     </div>
   );
 };
