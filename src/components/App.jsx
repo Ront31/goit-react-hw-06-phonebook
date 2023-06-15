@@ -37,10 +37,10 @@ export const App = () => {
   };
 
   return (
-    <div className={css.phonebook}>
-      <h1 className={css.title}>Phonebook</h1>
+    <div>
+      <h1>Phonebook</h1>
       <ContactForm formSubmitHandler={formSubmitHandler}></ContactForm>
-      <h2 className={css.title}>Contacts</h2>
+      <h2>Contacts</h2>
       <Filter value={filter} onChange={handleFilterChange}></Filter>
       <ContactList
         contacts={filteredContacts}
